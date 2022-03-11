@@ -1,36 +1,80 @@
-import {v4 as uuid} from "uuid";
+import Con from "../db.js";
 
 let users = [];
 
-export const getUsers = (req, res) => {
+const client = await Con.connect();
 
-    res.send(users);
+//OK
+export const getUsers = async (req, res) => {
+  users = await client.query("SELECT * FROM users;");
+  res.send(users);
+  if (!users) {
+    return res.status(200).json({
+      status: "success",
+    });
+  }
 };
 
-export const createUser = (req, res) => {
-    const user = req.body;
+//OK
+export const createUser = async (req, res) => {
+  //const client = await Con.connect();
+  const nameUser = req.body.name.toString();
+  const email = req.body.email.toString();
+  const contact = req.body.contact.toString();
 
-    users.push({ ...user, id: uuid() });
-    res.send("User Added Successfully");
+  const newUser = await client.query(
+    `INSERT INTO users (name,mail,contact) VALUES ('${nameUser}','${email}',${contact});`
+  );
+  res.send("User Added Successfully");
+  if (!newUser) {
+    res.json(newUser);
+    return res.status(200).json({
+      status: "success",
+    });
+  }
 };
 
-export const getUser = (req, res) => {
-    const singleUser = users.filter((user) => user.id === req.params.id);
-    res.send(singleUser);
-}
-
-export const deleteUser = (req, res) => {
-    users = users.filter((user) => user.id !== req.params.id);
-    res.send("User Deleted Successfully")
-}
-
-export const updateUser = (req, res) => {
-    const user = users.find((user) => user.id === req.params.id);
-
-    user.name = req.body.name;
-    user.phone = req.body.phone;
-    user.location = req.body.location;
-
-    res.send("User Updated Successfully");
+export const getUser = async (req, res) => {
+  const id = req.params.id;
+  const singleUser = await client.query(
+    `SELECT * FROM users where id = ${id};`
+  );
+  res.send(singleUser);
+  if (!singleUser) {
+    return res.status(200).json({
+      status: "success",
+    });
+  }
 };
 
+export const deleteUser = async (req, res) => {
+  const user =  req.params.id;
+
+  const deleteContact = await client.query(`DELETE FROM users WHERE id = ${user};`);
+  res.send("User Deleted Successfully");
+
+  if(!deleteContact){
+    res.json(deleteContact);
+    return res.status(200).json({
+      status: "success",
+    });
+  }
+};
+
+export const updateUser = async (req, res) => {
+  const user = req.params.id;
+  const name = req.body.name;
+  const contact = req.body.contact;
+  const mail = req.body.mail;
+
+  const update = await client.query(
+    `UPDATE users SET name = '${name}', mail = '${mail}', contact = '${contact}' WHERE id = ${user};`
+  );
+  res.send("User Updated Successfully");
+  if (!update) {
+    res.json(update);
+    return res.status(200).json({
+      status: "success",
+    });
+  }
+};
